@@ -10,33 +10,20 @@ import {
 } from '@mui/material'
 import ReceiptIcon from '@mui/icons-material/Receipt'
 import { TodoListForm } from './TodoListForm'
-
+import { getAllTodoLists } from '../../lib/actions'
 // Simulate network
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
-const fetchTodoLists = () => {
-  return sleep(1000).then(() =>
-    Promise.resolve({
-      '0000000001': {
-        id: '0000000001',
-        title: 'First List',
-        todos: ['First todo of first list!'],
-      },
-      '0000000002': {
-        id: '0000000002',
-        title: 'Second List',
-        todos: ['First todo of second list!'],
-      },
-    })
-  )
-}
+// const fetchTodoLists = () => {
+//   return getAllTodoLists()
+// }
 
 export const TodoLists = ({ style }) => {
   const [todoLists, setTodoLists] = useState({})
   const [activeList, setActiveList] = useState()
 
   useEffect(() => {
-    fetchTodoLists().then(setTodoLists)
+    getAllTodoLists().then(setTodoLists)
   }, [])
 
   if (!Object.keys(todoLists).length) return null

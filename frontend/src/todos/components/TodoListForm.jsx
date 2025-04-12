@@ -20,12 +20,12 @@ export const TodoListForm = ({ todoList, saveTodoList }) => {
           style={{ display: 'flex', flexDirection: 'column', flexGrow: 1 }}
         >
           {todos.map((name, index) => (
-            <div key={index} style={{ display: 'flex', alignItems: 'center' }}>
+            <div key={index} style={{ display: 'flex', alignItems: 'center', padding: '0.5rem' }}>
               <Typography sx={{ margin: '8px' }} variant='h6'>
                 {index + 1}
               </Typography>
               <TextField
-                sx={{ flexGrow: 1, marginTop: '1rem' }}
+                sx={{ flexGrow: 1}}
                 label='What to do?'
                 value={name}
                 onChange={(event) => {
@@ -41,6 +41,7 @@ export const TodoListForm = ({ todoList, saveTodoList }) => {
                 sx={{ margin: '8px' }}
                 size='small'
                 color='secondary'
+                aria-label={`Delete todo item ${index + 1}`}
                 onClick={() => {
                   setTodos([
                     // immutable delete
