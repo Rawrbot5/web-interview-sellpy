@@ -1,9 +1,9 @@
 import { z } from 'zod'
 
 export const todoItemSchema = z.object({
-  text: z.string(),
+  text: z.string().optional(),
   completed: z.boolean().default(false),
-  dueDate: z.date().optional(),
+  dueDate: z.string().date().nullable().optional(),
 })
 
 export const todoListSchema = z.object({
@@ -12,3 +12,5 @@ export const todoListSchema = z.object({
   todos: z.array(todoItemSchema).default([]),
   completed: z.boolean().optional(),
 })
+
+export const todoArraySchema = z.array(todoItemSchema)
