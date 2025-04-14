@@ -18,6 +18,10 @@ export const createTodoList = async (title) => {
     method: 'POST',
     body: JSON.stringify({ title }),
   })
+  if (!response.ok) {
+    throw new Error('Failed to create todo list')
+  }
+  return response.json()
 }
 
 export const updateTodoList = async (id, todos) => {
@@ -29,4 +33,7 @@ export const updateTodoList = async (id, todos) => {
     },
     body: JSON.stringify(todos),
   })
+  if (!response.ok) {
+    throw new Error('Failed to update todo list')
+  }
 }

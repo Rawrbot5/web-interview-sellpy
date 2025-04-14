@@ -10,4 +10,5 @@ export const todoListSchema = z.object({
   id: z.string(),
   title: z.string(),
   todos: z.array(todoItemSchema).default([]),
+  completed: z.boolean().optional(),
 })

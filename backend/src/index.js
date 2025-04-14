@@ -41,6 +41,7 @@ app.get('/todo-lists', (req, res) => {
   const todoListIdandTitles = todoLists.map((list) => ({
     id: list.id,
     title: list.title,
+    completed: list.todos.length > 0 && list.todos.every((todo) => todo.completed),
   }))
   res.json(todoListIdandTitles)
 })
@@ -67,7 +68,7 @@ app.post('/todo-lists', (req, res) => {
 
 app.put('/todo-lists/:id', (req, res) => {
   const { id } = req.params
-  const { todos } = req.body
+  const todos = req.body
   const listIndexToUpdate = todoLists.findIndex((list) => list.id === id)
   todoLists[listIndexToUpdate].todos = todos
   console.log('updating: ', todoLists[listIndexToUpdate])

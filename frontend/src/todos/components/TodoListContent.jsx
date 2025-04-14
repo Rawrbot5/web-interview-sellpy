@@ -1,26 +1,45 @@
 import React, { useState, useEffect } from 'react'
-import { TextField, Card, CardContent, CardActions, Button, Typography } from '@mui/material'
+import {
+  TextField,
+  Card,
+  CardContent,
+  CardActions,
+  Button,
+  Typography,
+  Checkbox,
+} from '@mui/material'
 import DeleteIcon from '@mui/icons-material/Delete'
 import AddIcon from '@mui/icons-material/Add'
+import CheckCircleIcon from '@mui/icons-material/CheckCircle'
+import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked'
 import { updateTodoList, getTodoListById } from '../../lib/actions'
 
-export const TodoListContent = ({ activeList }) => {
+export const TodoListContent = ({ activeList, setListCompletion }) => {
   const [todos, setTodos] = useState([])
   const [isLoading, setIsLoading] = useState(true)
 
+  const activeListId = activeList?.id
+
   useEffect(() => {
-    if (!activeList?.id) return
+    if (!activeListId) return
 
     setIsLoading(true)
-    getTodoListById(activeList?.id).then((todosList) => {
+    getTodoListById(activeListId).then((todosList) => {
       setTodos(todosList.todos)
       setIsLoading(false)
     })
-  }, [activeList?.id])
+  }, [activeListId])
 
   const handleSubmit = (event) => {
     event.preventDefault()
-    updateTodoList(activeList?.id, todos)
+    console.log('todos in handleSubmit: ', todos)
+    updateTodoList(activeListId, todos).then(() => {
+      setListCompletion(activeList, isListCompleted(todos))
+    })
+  }
+
+  const isListCompleted = (todos) => {
+    return todos.every((todo) => todo.completed)
   }
 
   if (isLoading) {
@@ -32,6 +51,8 @@ export const TodoListContent = ({ activeList }) => {
       </Card>
     )
   }
+
+  console.log('todos in TodoListContent: ', todos)
 
   return (
     <Card sx={{ margin: '0 1rem' }}>
@@ -48,9 +69,20 @@ export const TodoListContent = ({ activeList }) => {
                   key={index}
                   style={{ display: 'flex', alignItems: 'center', padding: '0.5rem' }}
                 >
-                  <Typography sx={{ margin: '8px' }} variant='h6'>
-                    {index + 1}
-                  </Typography>
+                  <Checkbox
+                    sx={{ margin: '8px' }}
+                    checked={todo.completed}
+                    icon={<RadioButtonUncheckedIcon />}
+                    checkedIcon={<CheckCircleIcon />}
+                    color='success'
+                    onChange={(event) => {
+                      setTodos([
+                        ...todos.slice(0, index),
+                        { ...todo, completed: event.target.checked },
+                        ...todos.slice(index + 1),
+                      ])
+                    }}
+                  />
                   <TextField
                     sx={{ flexGrow: 1 }}
                     label='What to do?'
@@ -87,7 +119,7 @@ export const TodoListContent = ({ activeList }) => {
               type='button'
               color='primary'
               onClick={() => {
-                setTodos([...todos, ''])
+                setTodos([...todos, { text: '', completed: false }])
               }}
             >
               Add Todo <AddIcon />

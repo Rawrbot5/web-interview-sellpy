@@ -9,6 +9,7 @@ import {
   Typography,
 } from '@mui/material'
 import ReceiptIcon from '@mui/icons-material/Receipt'
+import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import { TodoListContent } from './TodoListContent'
 import { getAllTodoLists } from '../../lib/actions'
 // Simulate network
@@ -22,6 +23,13 @@ export const TodoLists = ({ style }) => {
   useEffect(() => {
     getAllTodoLists().then(setTodoLists)
   }, [])
+
+  const setListCompletion = (list, completed) => {
+    const updatedTodoLists = todoLists.map((todoList) =>
+      todoList.id === list.id ? { ...todoList, completed } : todoList
+    )
+    setTodoLists(updatedTodoLists)
+  }
 
   if (todoLists.length === 0) return null
 
@@ -39,7 +47,7 @@ export const TodoLists = ({ style }) => {
                 selected={todoList.id === activeList?.id}
               >
                 <ListItemIcon>
-                  <ReceiptIcon />
+                  {todoList.completed ? <CheckCircleIcon color='success' /> : <ReceiptIcon />}
                 </ListItemIcon>
                 <ListItemText primary={todoList?.title} />
               </ListItemButton>
@@ -48,17 +56,7 @@ export const TodoLists = ({ style }) => {
         </CardContent>
       </Card>
       {activeList && (
-        <TodoListContent
-          key={activeList.id} // use key to make React recreate component to reset internal state
-          activeList={activeList}
-          saveTodoList={(id, { todos }) => {
-            const listToUpdate = todoLists.find((list) => list.id === id)
-            setTodoLists([
-              ...todoLists.filter((list) => list.id !== id),
-              { ...listToUpdate, todos },
-            ])
-          }}
-        />
+        <TodoListContent activeList={activeList} setListCompletion={setListCompletion} />
       )}
     </Fragment>
   )
