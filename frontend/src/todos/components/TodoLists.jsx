@@ -12,8 +12,6 @@ import ReceiptIcon from '@mui/icons-material/Receipt'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import { TodoListContent } from './TodoListContent'
 import { getAllTodoLists } from '../../lib/actions'
-// Simulate network
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
 export const TodoLists = ({ style }) => {
   const [todoLists, setTodoLists] = useState([])
@@ -33,7 +31,6 @@ export const TodoLists = ({ style }) => {
 
   if (todoLists.length === 0) return null
 
-  console.log('activeList: ', activeList)
   return (
     <Fragment>
       <Card style={style}>

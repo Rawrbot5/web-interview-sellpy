@@ -8,23 +8,27 @@ import {
   Typography,
   Checkbox,
   Chip,
+  CircularProgress,
 } from '@mui/material'
 import DeleteIcon from '@mui/icons-material/Delete'
 import AddIcon from '@mui/icons-material/Add'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked'
 import { updateTodoList, getTodoListById } from '../../lib/actions'
+import { getDueDateDifference, isListCompleted } from '../../lib/utils'
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 import dayjs from 'dayjs'
+import { useDebouncedCallback } from 'use-debounce'
 
 export const TodoListContent = ({ activeList, setListCompletion }) => {
+  const activeListId = activeList?.id
   const [todos, setTodos] = useState([])
   const [isLoading, setIsLoading] = useState(true)
+  const [isSaving, setIsSaving] = useState(false)
 
-  const activeListId = activeList?.id
-
+  // fetch todos from server
   useEffect(() => {
     if (!activeListId) return
 
@@ -35,34 +39,39 @@ export const TodoListContent = ({ activeList, setListCompletion }) => {
     })
   }, [activeListId])
 
-  const handleSubmit = (event) => {
-    event.preventDefault()
-    console.log('todos in handleSubmit: ', todos)
-    updateTodoList(activeListId, todos).then(() => {
-      setListCompletion(activeList, isListCompleted(todos))
+  //cancel debounced saves on list change
+  useEffect(() => {
+    return () => {
+      debouncedSaveTodos.cancel()
+    }
+  }, [activeListId])
+
+  //debounce setting save state
+  const debouncedSetNotSaving = useDebouncedCallback(() => {
+    setIsSaving(false)
+  }, 200)
+
+  const saveTodos = (newTodos) => {
+    if (!activeListId || isLoading) return
+    setIsSaving(true)
+    updateTodoList(activeListId, newTodos).then(() => {
+      setListCompletion(activeList, isListCompleted(newTodos))
+      debouncedSetNotSaving()
     })
   }
 
-  const isListCompleted = (todos) => {
-    return todos.every((todo) => todo.completed)
-  }
+  const debouncedSaveTodos = useDebouncedCallback((newTodos) => {
+    saveTodos(newTodos)
+  }, 600)
 
-  const getDueDateDifference = (dueDate) => {
-    if (!dueDate) return null
-    const dueDateDayjs = dayjs(dueDate)
-    const dayDifference = dueDateDayjs.diff(dayjs(), 'day')
-    if (dayDifference === 0) return { label: 'Today', color: 'warning', variant: 'filled' }
-    else if (dayDifference === 1)
-      return { label: 'Tomorrow', color: 'success', variant: 'outlined' }
-    else if (dayDifference === -1)
-      return { label: 'Yesterday', color: 'error', variant: 'outlined' }
-    else if (dayDifference < -1)
-      return {
-        label: `${Math.abs(dayDifference)} days ago!`,
-        color: 'error',
-        variant: 'filled',
-      }
-    else return { label: `In ${dayDifference} days`, color: 'success', variant: 'outlined' }
+  const handleTextChange = (index, newText, todo) => {
+    const newTodos = [
+      ...todos.slice(0, index),
+      { ...todo, text: newText },
+      ...todos.slice(index + 1),
+    ]
+    setTodos(newTodos)
+    debouncedSaveTodos(newTodos)
   }
 
   if (isLoading) {
@@ -75,16 +84,11 @@ export const TodoListContent = ({ activeList, setListCompletion }) => {
     )
   }
 
-  console.log('todos in TodoListContent: ', todos)
-
   return (
     <Card sx={{ margin: '0 1rem' }}>
       <CardContent>
         <Typography component='h2'>{activeList?.title}</Typography>
-        <form
-          onSubmit={handleSubmit}
-          style={{ display: 'flex', flexDirection: 'column', flexGrow: 1 }}
-        >
+        <div style={{ display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
           {todos &&
             todos.map((todo, index) => {
               const dueDateDifference = !todo.completed ? getDueDateDifference(todo.dueDate) : null
@@ -105,11 +109,13 @@ export const TodoListContent = ({ activeList, setListCompletion }) => {
                     checkedIcon={<CheckCircleIcon />}
                     color='success'
                     onChange={(event) => {
-                      setTodos([
+                      const newTodos = [
                         ...todos.slice(0, index),
                         { ...todo, completed: event.target.checked },
                         ...todos.slice(index + 1),
-                      ])
+                      ]
+                      setTodos(newTodos)
+                      saveTodos(newTodos)
                     }}
                   />
                   <TextField
@@ -117,12 +123,7 @@ export const TodoListContent = ({ activeList, setListCompletion }) => {
                     label='What to do?'
                     value={todo.text}
                     onChange={(event) => {
-                      setTodos([
-                        // immutable update
-                        ...todos.slice(0, index),
-                        { ...todo, text: event.target.value },
-                        ...todos.slice(index + 1),
-                      ])
+                      handleTextChange(index, event.target.value, todo)
                     }}
                   />
                   <LocalizationProvider dateAdapter={AdapterDayjs}>
@@ -131,12 +132,16 @@ export const TodoListContent = ({ activeList, setListCompletion }) => {
                       label='Due when?'
                       format='YYYY-MM-DD'
                       value={todo.dueDate ? dayjs(todo.dueDate) : null}
-                      onChange={(newDate) => {
-                        setTodos([
-                          ...todos.slice(0, index),
-                          { ...todo, dueDate: newDate ? newDate.format('YYYY-MM-DD') : null },
-                          ...todos.slice(index + 1),
-                        ])
+                      onChange={(newDate, context) => {
+                        if (context.validationError === null) {
+                          const newTodos = [
+                            ...todos.slice(0, index),
+                            { ...todo, dueDate: newDate ? newDate.format('YYYY-MM-DD') : null },
+                            ...todos.slice(index + 1),
+                          ]
+                          setTodos(newTodos)
+                          saveTodos(newTodos)
+                        }
                       }}
                       slotProps={{
                         textField: {
@@ -159,7 +164,8 @@ export const TodoListContent = ({ activeList, setListCompletion }) => {
                       variant={dueDateDifference?.variant}
                       size='small'
                       sx={{
-                        visibility: dueDateDifference ? 'visible' : 'hidden',
+                        visibility:
+                          dueDateDifference && dayjs(todo.dueDate).isValid() ? 'visible' : 'hidden',
                       }}
                     />
                   </div>
@@ -168,11 +174,9 @@ export const TodoListContent = ({ activeList, setListCompletion }) => {
                     size='small'
                     color='secondary'
                     onClick={() => {
-                      setTodos([
-                        // immutable delete
-                        ...todos.slice(0, index),
-                        ...todos.slice(index + 1),
-                      ])
+                      const newTodos = [...todos.slice(0, index), ...todos.slice(index + 1)]
+                      setTodos(newTodos)
+                      saveTodos(newTodos)
                     }}
                   >
                     <DeleteIcon />
@@ -185,16 +189,27 @@ export const TodoListContent = ({ activeList, setListCompletion }) => {
               type='button'
               color='primary'
               onClick={() => {
-                setTodos([...todos, { text: '', completed: false }])
+                const newTodos = [...todos, { text: '', completed: false }]
+                setTodos(newTodos)
+                saveTodos(newTodos)
               }}
             >
               Add Todo <AddIcon />
             </Button>
-            <Button type='submit' variant='contained' color='primary'>
-              Save
-            </Button>
+            {isSaving && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <CircularProgress
+                  size={24}
+                  sx={{
+                    marginLeft: 'auto',
+                    marginRight: 2,
+                  }}
+                />
+                <Typography color='primary'>Saving...</Typography>
+              </div>
+            )}
           </CardActions>
-        </form>
+        </div>
       </CardContent>
     </Card>
   )
