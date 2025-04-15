@@ -5,7 +5,7 @@ import { updateTodoList, getTodoListById } from '../../lib/actions'
 import { isListCompleted } from '../../lib/utils'
 import { useDebouncedCallback } from 'use-debounce'
 import { TodoItem } from './TodoItem'
-
+import { toast } from 'react-toastify'
 export const TodoListContent = ({ activeList, setListCompletion }) => {
   const activeListId = activeList?.id
   const [todos, setTodos] = useState([])
@@ -26,6 +26,8 @@ export const TodoListContent = ({ activeList, setListCompletion }) => {
   //cancel debounced saves on list change
   useEffect(() => {
     return () => {
+      if (debouncedSaveTodos.isPending())
+        toast.error('Saving interrupted', { hideProgressBar: true })
       debouncedSaveTodos.cancel()
     }
   }, [activeListId])

@@ -19,7 +19,7 @@ export const TodoLists = ({ style }) => {
 
   // initial data fetching
   useEffect(() => {
-    getAllTodoLists().then(setTodoLists)
+    getAllTodoLists().then((todoLists) => setTodoLists(todoLists))
   }, [])
 
   const setListCompletion = (list, completed) => {

@@ -1,7 +1,6 @@
 import express from 'express'
 import cors from 'cors'
-import { z } from 'zod'
-import { todoListSchema, todoItemSchema, todoArraySchema } from './dataSchemas.js'
+import { todoListSchema, todoArraySchema } from './dataSchemas.js'
 
 const app = express()
 
@@ -66,7 +65,7 @@ app.post('/todo-lists', (req, res) => {
   res.status(201).json(newTodoList)
 })
 
-app.put('/todo-lists/:id', (req, res) => {
+app.put('/todo-lists/:id', async (req, res) => {
   const { id } = req.params
   const todos = req.body
   const validatedTodos = todoArraySchema.safeParse(todos)
