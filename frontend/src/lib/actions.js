@@ -1,3 +1,5 @@
+import { sleep } from './utils'
+
 export const getAllTodoLists = async () => {
   const response = await fetch('http://localhost:3001/todo-lists')
   const data = await response.json()
@@ -30,6 +32,7 @@ export const updateTodoList = async (id, todos) => {
     body: JSON.stringify(todos),
   })
   if (!response.ok) {
-    throw new Error('Failed to update todo list')
+    const error = await response.json()
+    console.error('Error updating todo list:', error)
   }
 }
