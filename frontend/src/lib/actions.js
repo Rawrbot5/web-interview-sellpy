@@ -1,5 +1,3 @@
-import { sleep } from './utils'
-
 export const getAllTodoLists = async () => {
   const response = await fetch('http://localhost:3001/todo-lists')
   const data = await response.json()

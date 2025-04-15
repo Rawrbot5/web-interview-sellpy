@@ -23,6 +23,10 @@ export const TodoListContent = ({ activeList, setListCompletion }) => {
     })
   }, [activeListId])
 
+  const debouncedSaveTodos = useDebouncedCallback((newTodos) => {
+    saveTodos(newTodos)
+  }, 600)
+
   //cancel debounced saves on list change
   useEffect(() => {
     return () => {
@@ -30,7 +34,7 @@ export const TodoListContent = ({ activeList, setListCompletion }) => {
         toast.error('Saving interrupted', { hideProgressBar: true })
       debouncedSaveTodos.cancel()
     }
-  }, [activeListId])
+  }, [activeListId, debouncedSaveTodos])
 
   const saveTodos = (newTodos) => {
     if (!activeListId || isLoading) return
@@ -49,10 +53,6 @@ export const TodoListContent = ({ activeList, setListCompletion }) => {
         setIsSaving(false)
       })
   }
-
-  const debouncedSaveTodos = useDebouncedCallback((newTodos) => {
-    saveTodos(newTodos)
-  }, 600)
 
   const handleTodoUpdate = (index, newTodo) => {
     const newTodos = [...todos.slice(0, index), newTodo, ...todos.slice(index + 1)]
