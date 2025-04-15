@@ -51,3 +51,9 @@ Before submitting, read through all changes one last time - code quality matters
 If you have developed without ESLint set up, run `npm run lint` in both `/backend` and `/frontend` and fix any errors/warnings.
 
 Send a link to your forked repository to your contact at Sellpy. Don't forget to mention which tasks you completed.
+
+
+Further improvments:
+
+More robust api calls, timeout protection
+responsive layout
