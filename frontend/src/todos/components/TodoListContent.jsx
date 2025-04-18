@@ -1,27 +1,21 @@
 import React, { useState, useEffect } from 'react'
 import { Card, CardContent, CardActions, Button, Typography, CircularProgress } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
-import { updateTodoList, getTodoListById } from '../../lib/actions'
 import { isListCompleted } from '../../lib/utils'
 import { useDebouncedCallback } from 'use-debounce'
+import { useQueryClient } from '@tanstack/react-query'
 import { TodoItem } from './TodoItem'
 import { toast } from 'react-toastify'
-export const TodoListContent = ({ activeList, setListCompletion }) => {
+import { useTodoList, useUpdateTodoList } from '../../lib/queries'
+
+export const TodoListContent = ({ activeList }) => {
+  const queryClient = useQueryClient()
   const activeListId = activeList?.id
-  const [todos, setTodos] = useState([])
-  const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
 
-  // fetch todos from server
-  useEffect(() => {
-    if (!activeListId) return
+  const { data: todoList, isLoading: isTodoListLoading } = useTodoList(activeListId)
 
-    setIsLoading(true)
-    getTodoListById(activeListId).then((todosList) => {
-      setTodos(todosList.todos)
-      setIsLoading(false)
-    })
-  }, [activeListId])
+  const updateTodoListMutation = useUpdateTodoList()
 
   const debouncedSaveTodos = useDebouncedCallback((newTodos) => {
     saveTodos(newTodos)
@@ -32,51 +26,59 @@ export const TodoListContent = ({ activeList, setListCompletion }) => {
     return () => {
       if (debouncedSaveTodos.isPending())
         toast.error('Saving interrupted', { hideProgressBar: true })
+      queryClient.invalidateQueries({ queryKey: ['todoList', activeListId] })
       debouncedSaveTodos.cancel()
     }
-  }, [activeListId, debouncedSaveTodos])
+  }, [activeListId, debouncedSaveTodos, queryClient])
 
   const saveTodos = (newTodos) => {
-    if (!activeListId || isLoading) return
+    if (!activeListId || isTodoListLoading) return
     setIsSaving(true)
     const startTime = Date.now()
 
-    //ensure a minimum delay for the save indicator to show
-    updateTodoList(activeListId, newTodos)
-      .then(() => {
-        setListCompletion(activeList, isListCompleted(newTodos))
-        const elapsedTime = Date.now() - startTime
-        const remainingDelay = Math.max(0, 1000 - elapsedTime)
-        setTimeout(() => setIsSaving(false), remainingDelay)
-      })
-      .catch(() => {
-        setIsSaving(false)
-      })
+    updateTodoListMutation.mutate(
+      { id: activeListId, todos: newTodos },
+      {
+        onSuccess: (data) => {
+          const elapsedTime = Date.now() - startTime
+          const remainingDelay = Math.max(0, 1000 - elapsedTime)
+          setTimeout(() => setIsSaving(false), remainingDelay)
+        },
+        onError: (error) => {
+          console.error('Mutation error:', error)
+          toast.error('Failed to save todos', { hideProgressBar: true })
+          setIsSaving(false)
+        },
+      }
+    )
   }
 
   const handleTodoUpdate = (index, newTodo) => {
-    const newTodos = [...todos.slice(0, index), newTodo, ...todos.slice(index + 1)]
-    setTodos(newTodos)
+    console.log('handleTodoUpdate called with:', { index, newTodo })
+    const newTodos = [
+      ...todoList.todos.slice(0, index),
+      newTodo,
+      ...todoList.todos.slice(index + 1),
+    ]
     saveTodos(newTodos)
   }
 
   const handleTextChange = (index, newText, todo) => {
     const newTodos = [
-      ...todos.slice(0, index),
+      ...todoList.todos.slice(0, index),
       { ...todo, text: newText },
-      ...todos.slice(index + 1),
+      ...todoList.todos.slice(index + 1),
     ]
-    setTodos(newTodos)
+    queryClient.setQueryData(['todoList', activeListId], { ...todoList, todos: newTodos })
     debouncedSaveTodos(newTodos)
   }
 
   const handleTodoDeletion = (index) => {
-    const newTodos = [...todos.slice(0, index), ...todos.slice(index + 1)]
-    setTodos(newTodos)
+    const newTodos = [...todoList.todos.slice(0, index), ...todoList.todos.slice(index + 1)]
     saveTodos(newTodos)
   }
 
-  if (isLoading) {
+  if (isTodoListLoading) {
     return (
       <Card sx={{ margin: '0 1rem' }}>
         <CardContent>
@@ -91,8 +93,8 @@ export const TodoListContent = ({ activeList, setListCompletion }) => {
       <CardContent>
         <Typography component='h2'>{activeList?.title}</Typography>
         <div style={{ display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
-          {todos &&
-            todos.map((todo, index) => {
+          {todoList?.todos &&
+            todoList.todos.map((todo, index) => {
               return (
                 <TodoItem
                   key={index}
@@ -109,8 +111,7 @@ export const TodoListContent = ({ activeList, setListCompletion }) => {
               type='button'
               color='primary'
               onClick={() => {
-                const newTodos = [...todos, { text: '', completed: false }]
-                setTodos(newTodos)
+                const newTodos = [...todoList.todos, { text: '', completed: false }]
                 saveTodos(newTodos)
               }}
             >

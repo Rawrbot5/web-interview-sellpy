@@ -1,4 +1,4 @@
-import React, { Fragment, useState, useEffect } from 'react'
+import React, { Fragment, useState } from 'react'
 import {
   Card,
   CardContent,
@@ -7,29 +7,27 @@ import {
   ListItemText,
   ListItemIcon,
   Typography,
+  CircularProgress,
 } from '@mui/material'
 import ReceiptIcon from '@mui/icons-material/Receipt'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import { TodoListContent } from './TodoListContent'
-import { getAllTodoLists } from '../../lib/actions'
+import { useTodoLists } from '../../lib/queries'
 
 export const TodoLists = ({ style }) => {
-  const [todoLists, setTodoLists] = useState([])
+  const { data: todoLists, isLoading: isTodoListsLoading } = useTodoLists()
   const [activeList, setActiveList] = useState(null)
 
-  // initial data fetching
-  useEffect(() => {
-    getAllTodoLists().then((todoLists) => setTodoLists(todoLists))
-  }, [])
-
-  const setListCompletion = (list, completed) => {
-    const updatedTodoLists = todoLists.map((todoList) =>
-      todoList.id === list.id ? { ...todoList, completed } : todoList
+  if (isTodoListsLoading)
+    return (
+      <Card style={style}>
+        <CardContent>
+          <Typography component='h2'>My Todo Lists</Typography>
+          <CircularProgress sx={{ margin: '0.5rem' }} />
+        </CardContent>
+      </Card>
     )
-    setTodoLists(updatedTodoLists)
-  }
-
-  if (todoLists.length === 0) return null
+  if (todoLists?.length === 0 || !todoLists) return null
 
   return (
     <Fragment>
@@ -37,7 +35,7 @@ export const TodoLists = ({ style }) => {
         <CardContent>
           <Typography component='h2'>My Todo Lists</Typography>
           <List>
-            {todoLists.map((todoList) => (
+            {todoLists?.map((todoList) => (
               <ListItemButton
                 key={todoList.id}
                 onClick={() => setActiveList(todoList)}
@@ -52,9 +50,7 @@ export const TodoLists = ({ style }) => {
           </List>
         </CardContent>
       </Card>
-      {activeList && (
-        <TodoListContent activeList={activeList} setListCompletion={setListCompletion} />
-      )}
+      {activeList && <TodoListContent activeList={activeList} />}
     </Fragment>
   )
 }

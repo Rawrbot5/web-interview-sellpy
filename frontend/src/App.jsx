@@ -2,6 +2,9 @@ import React from 'react'
 import { AppBar, Toolbar, Typography } from '@mui/material'
 import { TodoLists } from './todos/components/TodoLists'
 import { ToastContainer } from 'react-toastify'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+
+const queryClient = new QueryClient()
 
 const MainAppBar = () => {
   return (
@@ -36,10 +39,12 @@ const MainWrapper = ({ children }) => {
 
 const App = () => {
   return (
-    <MainWrapper>
-      <TodoLists style={{ margin: '1rem' }} />
-      <ToastContainer />
-    </MainWrapper>
+    <QueryClientProvider client={queryClient}>
+      <MainWrapper>
+        <TodoLists style={{ margin: '1rem' }} />
+        <ToastContainer />
+      </MainWrapper>
+    </QueryClientProvider>
   )
 }
 

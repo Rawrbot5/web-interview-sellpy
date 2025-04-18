@@ -33,4 +33,5 @@ export const updateTodoList = async (id, todos) => {
     const error = await response.json()
     console.error('Error updating todo list:', error)
   }
+  return todos
 }

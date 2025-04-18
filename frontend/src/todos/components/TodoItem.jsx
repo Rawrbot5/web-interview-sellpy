@@ -7,9 +7,23 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 import dayjs from 'dayjs'
+import { useState, useEffect } from 'react'
 
 export const TodoItem = ({ todo, index, onUpdate, onTextChange, onDelete }) => {
+  const [todoText, setTodoText] = useState(todo.text)
   const dueDateDifference = !todo.completed ? getDueDateDifference(todo.dueDate) : null
+
+  useEffect(() => {
+    setTodoText(todo.text)
+  }, [todo.text])
+
+  useEffect(() => {
+    return () => {
+      if (todoText !== todo.text) {
+        setTodoText(todo.text)
+      }
+    }
+  }, [todo.text, todoText])
 
   const handleDateChange = (newDate, context) => {
     if (context.validationError === null) {
@@ -24,7 +38,9 @@ export const TodoItem = ({ todo, index, onUpdate, onTextChange, onDelete }) => {
         display: 'flex',
         alignItems: 'center',
         padding: '0.5rem',
+        flexWrap: 'wrap',
         gap: '0.5rem',
+        width: '100%',
       }}
     >
       <Checkbox
@@ -33,19 +49,30 @@ export const TodoItem = ({ todo, index, onUpdate, onTextChange, onDelete }) => {
         icon={<RadioButtonUncheckedIcon />}
         checkedIcon={<CheckCircleIcon />}
         color='success'
-        onChange={() => onUpdate(index, { ...todo, completed: !todo.completed })}
+        onChange={() => {
+          onUpdate(index, { ...todo, completed: !todo.completed })
+        }}
       />
       <TextField
-        sx={{ flex: '6 0 0' }}
+        sx={{
+          flex: '1 1 250px',
+          minWidth: { xs: '100%', md: '150px' },
+        }}
         label='What to do?'
-        value={todo.text}
+        value={todoText}
+        multiline
         onChange={(event) => {
-          onTextChange(index, event.target.value, todo)
+          const newText = event.target.value
+          setTodoText(newText)
+          onTextChange(index, newText, todo)
         }}
       />
       <LocalizationProvider dateAdapter={AdapterDayjs}>
         <DatePicker
-          sx={{ flex: '4 0 0' }}
+          sx={{
+            flex: '1 1 200px',
+            minWidth: { xs: '100%', md: '150px' },
+          }}
           label='Due when?'
           format='YYYY-MM-DD'
           value={todo.dueDate ? dayjs(todo.dueDate) : null}
@@ -60,9 +87,11 @@ export const TodoItem = ({ todo, index, onUpdate, onTextChange, onDelete }) => {
       </LocalizationProvider>
       <div
         style={{
-          flex: '1 0 0',
+          flex: '0 0 100px',
           display: 'flex',
           justifyContent: 'center',
+          alignItems: 'center',
+          minWidth: { xs: '100%', md: '100px' },
         }}
       >
         <Chip
@@ -72,11 +101,14 @@ export const TodoItem = ({ todo, index, onUpdate, onTextChange, onDelete }) => {
           size='small'
           sx={{
             visibility: dueDateDifference && dayjs(todo.dueDate).isValid() ? 'visible' : 'hidden',
+            maxWidth: '100%',
           }}
         />
       </div>
       <Button
-        sx={{ flex: '0 0 auto' }}
+        sx={{
+          flex: '0 0 auto',
+        }}
         size='small'
         color='secondary'
         onClick={() => onDelete(index)}
